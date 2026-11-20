@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+
+  --color-brand-50: #f4f1ff;
+  --color-brand-100: #eae4ff;
+  --color-brand-200: #d6ccff;
+  --color-brand-300: #b6a3ff;
+  --color-brand-400: #9370ff;
+  --color-brand-500: #7445ff;
+  --color-brand-600: #6428f5;
+  --color-brand-700: #541bd6;
+  --color-brand-800: #4518ab;
+  --color-brand-900: #3a1787;
+  --color-brand-950: #230b58;
+
+  --shadow-soft:
+    0 1px 2px rgb(23 15 64 / 0.05), 0 18px 40px -24px rgb(23 15 64 / 0.35);
+  --shadow-lift:
+    0 2px 4px rgb(23 15 64 / 0.06), 0 24px 48px -20px rgb(23 15 64 / 0.3);
+
+  --animate-rise: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade: fade 0.3s ease-out both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply min-h-dvh text-slate-900 antialiased dark:text-slate-100;
+    background-color: #f6f5fb;
+    background-image:
+      radial-gradient(
+        68% 55% at 12% -5%,
+        color-mix(in oklab, var(--color-brand-300) 34%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        52% 42% at 92% 0%,
+        rgb(56 189 248 / 0.16),
+        transparent 72%
+      );
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+
+  .dark body {
+    background-color: #08080f;
+    background-image:
+      radial-gradient(
+        65% 50% at 10% -10%,
+        color-mix(in oklab, var(--color-brand-700) 32%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        45% 38% at 95% 0%,
+        rgb(14 165 233 / 0.12),
+        transparent 72%
+      );
+  }
+
+  ::selection {
+    @apply bg-brand-200 text-brand-950;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(148 163 184 / 0.5) transparent;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-3xl border border-slate-200/80 bg-white/80 shadow-soft backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.045];
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-slate-200 bg-white/90 px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-brand-400;
+  }
+
+  .label {
+    @apply mb-1.5 flex items-center justify-between text-xs font-semibold tracking-wide text-slate-600 uppercase dark:text-slate-400;
+  }
+}
