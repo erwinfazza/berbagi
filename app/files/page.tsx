@@ -2,18 +2,19 @@ import { redirect } from "next/navigation";
 import UploadForm from "./upload-form";
 import { createClient } from "@/lib/supabase/server";
 import UserFileList, { type UserFileItem } from "@/components/UserFileList";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export const metadata = { title: "File saya" };
 export const dynamic = "force-dynamic";
 
 export default async function FilesPage() {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (!isSupabaseConfigured()) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-12">
         <section className="card p-6">
           <h1 className="text-2xl font-bold">Supabase belum dikonfigurasi</h1>
           <p className="mt-3 text-slate-600 dark:text-slate-300">
-            Isi URL dan anon key Supabase di <strong>.env.local</strong>, lalu jalankan SQL pada folder supabase.
+            Isi URL dan publishable key Supabase di <strong>.env.local</strong>, lalu jalankan SQL pada folder supabase.
           </p>
         </section>
       </main>

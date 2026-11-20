@@ -1,17 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getSupabasePublicConfig } from "./config";
 
 export async function createClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const config = getSupabasePublicConfig();
 
-  if (!url || !key) {
-    throw new Error("Konfigurasi Supabase belum lengkap. Isi URL dan anon key di .env.local.");
+  if (!config) {
+    throw new Error("Konfigurasi Supabase belum lengkap. Isi URL dan publishable key di .env.local.");
   }
 
   const cookieStore = await cookies();
 
-  return createServerClient(url, key, {
+  return createServerClient(config.url, config.key, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

@@ -1,17 +1,18 @@
 import { redirect } from "next/navigation";
 import UserFileList, { type UserFileItem } from "@/components/UserFileList";
 import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export const metadata = { title: "File terbaru" };
 export const dynamic = "force-dynamic";
 
 export default async function BaruPage() {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (!isSupabaseConfigured()) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-12">
         <section className="card p-6">
           <h1 className="text-2xl font-bold">Supabase belum dikonfigurasi</h1>
-          <p className="mt-3 text-slate-600 dark:text-slate-300">Isi URL dan anon key di <strong>.env.local</strong> untuk melihat file terbaru.</p>
+          <p className="mt-3 text-slate-600 dark:text-slate-300">Isi URL dan publishable key di <strong>.env.local</strong> untuk melihat file terbaru.</p>
         </section>
       </main>
     );

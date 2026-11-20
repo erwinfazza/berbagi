@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ const MIME_TYPES: Record<string, string[]> = {
 };
 
 export async function POST(request: Request) {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (!isSupabaseConfigured()) {
     return NextResponse.json({ error: "Supabase belum dikonfigurasi." }, { status: 503 });
   }
 

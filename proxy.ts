@@ -1,15 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getSupabasePublicConfig } from "@/lib/supabase/config";
 
 export async function proxy(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const config = getSupabasePublicConfig();
 
   // Auth is unavailable until the user configures their Supabase project.
-  if (!url || !key) return NextResponse.next({ request });
+  if (!config) return NextResponse.next({ request });
 
   let response = NextResponse.next({ request });
-  const supabase = createServerClient(url, key, {
+  const supabase = createServerClient(config.url, config.key, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -28,7 +28,7 @@ export async function proxy(request: NextRequest) {
 
   // Refreshes an expiring session; authorization is still enforced by pages,
   // route handlers, and Supabase Row Level Security.
-  await supabase.auth.getUser();
+  await supabase.auth.getClaims();
   return response;
 }
 

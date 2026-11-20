@@ -22,7 +22,7 @@ Ekstensi file dibatasi di bucket dan kolom metadata; validasi isi/magic bytes te
 Salin `.env.example` ke `.env.local`, lalu isi:
 
 - `NEXT_PUBLIC_SUPABASE_URL`: Project URL dari **Project Settings → API**.
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: anon/publishable key dari halaman yang sama.
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: publishable key dari halaman yang sama. Nama lama `NEXT_PUBLIC_SUPABASE_ANON_KEY` masih diterima sebagai fallback.
 
 Gunakan **Authentication → URL Configuration** untuk mengatur Site URL dan redirect URL aplikasi. Metode Email harus aktif. Jika konfirmasi email aktif, user harus mengonfirmasi email sebelum sign in.
 

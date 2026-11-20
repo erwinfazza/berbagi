@@ -3,13 +3,10 @@ import { signOutAction } from "@/app/auth-actions";
 import { createClient } from "@/lib/supabase/server";
 import NavbarLink from "@/components/NavbarLink";
 import MobileNavbar from "@/components/MobileNavbar";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 async function Navbar() {
-  const isSupabaseConfigured = Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  );
-  const user = isSupabaseConfigured
+  const user = isSupabaseConfigured()
     ? (await (await createClient()).auth.getUser()).data.user
     : null;
 
