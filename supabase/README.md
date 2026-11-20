@@ -35,7 +35,7 @@ Jangan pernah menaruh `service_role` key di variabel `NEXT_PUBLIC_*` atau mengir
 - `/baru` menampilkan 50 file milik user dengan upload terbaru di atas.
 - `/populer` mengurutkan file milik user berdasarkan `download_count`.
 - API upload/download memeriksa sesi di server, sementara RLS membatasi metadata dan objek Storage berdasarkan `auth.uid()`.
+- Server Actions dan endpoint `/api/tasks` serta `/api/stats` menyimpan data tugas pada `public.tasks`; seluruh operasi dibatasi pada user yang sedang masuk.
 - Tombol **Sign out** mengakhiri sesi Supabase.
-- Data tugas aplikasi masih memakai SQLite; autentikasi Supabase digunakan untuk fitur file.
 
 Upload dibatasi 50 MB. Validasi ekstensi/MIME di aplikasi tidak menggantikan pemindaian konten file; untuk produksi dengan file publik/berisiko, tambahkan pemeriksaan malware dan validasi signature file.

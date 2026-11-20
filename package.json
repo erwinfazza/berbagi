@@ -5,7 +5,7 @@
   "engines": {
     "node": ">=22.5.0"
   },
-  "description": "Aplikasi manajemen tugas fullstack — Next.js App Router + Tailwind CSS + SQLite",
+  "description": "Aplikasi berbagi file belajar — Next.js App Router + Supabase",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -38,7 +38,7 @@ export default function MobileNavbar({ isAuthenticated, email }: MobileNavbarPro
       {isOpen && (
         <div
           id="mobile-navigation"
-          className="absolute inset-x-0 top-full border-b border-slate-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-[#101018]"
+          className="absolute inset-x-0 top-full border-b border-slate-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-[#0b130d]"
         >
           {email && (
             <p className="mb-3 truncate px-3 text-xs text-slate-500 dark:text-slate-400">

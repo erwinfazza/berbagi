@@ -5,26 +5,26 @@ import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: {
-    default: "Ruang Tugas — kelola fokus harian",
-    template: "%s · Ruang Tugas",
+    default: "Berbagi — ruang file belajar",
+    template: "%s · Berbagi",
   },
   description:
-    "Aplikasi manajemen tugas fullstack: Next.js App Router, Tailwind CSS, Server Actions, dan SQLite.",
-  applicationName: "Ruang Tugas",
+    "Simpan materi, temukan file terbaru, dan bagikan file belajar dengan mudah.",
+  applicationName: "Berbagi",
   keywords: [
     "next.js",
     "tailwind",
     "fullstack",
-    "todo",
-    "sqlite",
+    "supabase",
+    "file sharing",
     "typescript",
   ],
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f5fb" },
-    { media: "(prefers-color-scheme: dark)", color: "#08080f" },
+    { media: "(prefers-color-scheme: light)", color: "#f5faf6" },
+    { media: "(prefers-color-scheme: dark)", color: "#050807" },
   ],
 };
 

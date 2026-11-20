@@ -5,7 +5,12 @@ import {
   parseTaskFilter,
   taskInputSchema,
 } from "@/lib/validation";
-import { createTask, listTasks } from "@/lib/tasks";
+import {
+  createTask,
+  getTaskContext,
+  listTasks,
+  TaskAuthRequiredError,
+} from "@/lib/tasks";
 
 export const dynamic = "force-dynamic";
 
@@ -21,12 +26,21 @@ export async function GET(request: Request) {
     q: searchParams.get("q"),
   });
 
-  const tasks = listTasks(filter);
+  try {
+    const { supabase, user } = await getTaskContext();
+    const tasks = await listTasks(supabase, user.id, filter);
 
-  return NextResponse.json({
-    data: tasks,
-    meta: { count: tasks.length, filter },
-  });
+    return NextResponse.json({
+      data: tasks,
+      meta: { count: tasks.length, filter },
+    });
+  } catch (error) {
+    if (error instanceof TaskAuthRequiredError) {
+      return NextResponse.json({ error: "Silakan sign in untuk mengakses tugas." }, { status: 401 });
+    }
+    console.error("[GET /api/tasks]", error);
+    return NextResponse.json({ error: "Tugas gagal dimuat." }, { status: 500 });
+  }
 }
 
 /**
@@ -55,11 +69,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const task = createTask(parsed.data);
-  revalidatePath("/");
+  try {
+    const { supabase, user } = await getTaskContext();
+    const task = await createTask(supabase, user.id, parsed.data);
+    revalidatePath("/");
 
-  return NextResponse.json(
-    { data: task },
-    { status: 201, headers: { Location: `/api/tasks/${task.id}` } },
-  );
+    return NextResponse.json(
+      { data: task },
+      { status: 201, headers: { Location: `/api/tasks/${task.id}` } },
+    );
+  } catch (error) {
+    if (error instanceof TaskAuthRequiredError) {
+      return NextResponse.json({ error: "Silakan sign in untuk membuat tugas." }, { status: 401 });
+    }
+    console.error("[POST /api/tasks]", error);
+    return NextResponse.json({ error: "Tugas gagal disimpan." }, { status: 500 });
+  }
 }

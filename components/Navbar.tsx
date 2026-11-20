@@ -14,7 +14,7 @@ async function Navbar() {
     : null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/85 backdrop-blur-xl dark:border-white/10 dark:bg-[#08080f]/85">
+    <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/85 backdrop-blur-xl dark:border-white/10 dark:bg-[#050807]/90">
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-2.5 font-bold tracking-wide">
           <span className="grid size-9 place-items-center rounded-xl bg-brand-600 text-lg text-white shadow-sm">B</span>

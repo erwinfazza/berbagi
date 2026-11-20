@@ -1,4 +1,4 @@
--- Schema Supabase untuk data tugas Ruang Tugas.
+-- Schema Supabase untuk data tugas Berbagi.
 -- Jalankan melalui Supabase Dashboard > SQL Editor.
 
 create table if not exists public.tasks (
@@ -42,6 +42,8 @@ create trigger tasks_set_updated_at
   execute function public.set_updated_at();
 
 alter table public.tasks enable row level security;
+
+grant select, insert, update, delete on public.tasks to authenticated;
 
 drop policy if exists "Users can read their own tasks" on public.tasks;
 create policy "Users can read their own tasks"

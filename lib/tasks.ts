@@ -1,26 +1,33 @@
-import { getDb } from "./db";
+import { createClient } from "@/lib/supabase/server";
 import type { Priority, Task, TaskFilter, TaskStats } from "./types";
 
 type TaskRow = {
-  id: number;
+  id: string;
+  user_id: string;
   title: string;
   description: string;
   priority: Priority;
-  completed: number;
+  completed: boolean;
   due_date: string | null;
   created_at: string;
   updated_at: string;
 };
 
-const ORDER_BY = `
-  ORDER BY
-    completed ASC,
-    CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END ASC,
-    due_date IS NULL ASC,
-    due_date ASC,
-    created_at DESC,
-    id DESC
-`;
+type TaskSupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+export class TaskAuthRequiredError extends Error {
+  constructor() {
+    super("Silakan sign in untuk mengakses tugas.");
+    this.name = "TaskAuthRequiredError";
+  }
+}
+
+export async function getTaskContext() {
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) throw new TaskAuthRequiredError();
+  return { supabase, user };
+}
 
 function mapRow(row: TaskRow): Task {
   return {
@@ -28,11 +35,27 @@ function mapRow(row: TaskRow): Task {
     title: row.title,
     description: row.description,
     priority: row.priority,
-    completed: Number(row.completed) === 1,
+    completed: row.completed,
     dueDate: row.due_date,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+const priorityRank: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
+
+function compareTasks(a: Task, b: Task): number {
+  if (a.completed !== b.completed) return Number(a.completed) - Number(b.completed);
+  if (priorityRank[a.priority] !== priorityRank[b.priority]) {
+    return priorityRank[a.priority] - priorityRank[b.priority];
+  }
+  if (a.dueDate === null && b.dueDate !== null) return 1;
+  if (a.dueDate !== null && b.dueDate === null) return -1;
+  if (a.dueDate && b.dueDate && a.dueDate !== b.dueDate) {
+    return a.dueDate.localeCompare(b.dueDate);
+  }
+  const createdDifference = Date.parse(b.createdAt) - Date.parse(a.createdAt);
+  return createdDifference || b.id.localeCompare(a.id);
 }
 
 export type CreateTaskInput = {
@@ -44,128 +67,151 @@ export type CreateTaskInput = {
 
 export type UpdateTaskInput = Partial<CreateTaskInput> & { completed?: boolean };
 
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (match) => `\\${match}`);
+export async function listTasks(
+  supabase: TaskSupabaseClient,
+  userId: string,
+  filter: Partial<TaskFilter> = {},
+): Promise<Task[]> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("id, user_id, title, description, priority, completed, due_date, created_at, updated_at")
+    .eq("user_id", userId);
+
+  if (error) throw new Error(error.message);
+
+  const query = filter.q?.trim().toLocaleLowerCase();
+  return ((data ?? []) as TaskRow[])
+    .map(mapRow)
+    .filter((task) => {
+      if (filter.status === "active" && task.completed) return false;
+      if (filter.status === "completed" && !task.completed) return false;
+      if (filter.priority && filter.priority !== "all" && task.priority !== filter.priority) {
+        return false;
+      }
+      if (query && !`${task.title}\n${task.description}`.toLocaleLowerCase().includes(query)) {
+        return false;
+      }
+      return true;
+    })
+    .sort(compareTasks);
 }
 
-export function listTasks(filter: Partial<TaskFilter> = {}): Task[] {
-  const db = getDb();
-  const clauses: string[] = [];
-  const params: Array<string | number> = [];
+export async function getTask(
+  supabase: TaskSupabaseClient,
+  userId: string,
+  id: string,
+): Promise<Task | null> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("id, user_id, title, description, priority, completed, due_date, created_at, updated_at")
+    .eq("user_id", userId)
+    .eq("id", id)
+    .maybeSingle();
 
-  if (filter.status === "active") clauses.push("completed = 0");
-  if (filter.status === "completed") clauses.push("completed = 1");
-  if (filter.priority && filter.priority !== "all") {
-    clauses.push("priority = ?");
-    params.push(filter.priority);
-  }
-  if (filter.q) {
-    const term = `%${escapeLike(filter.q)}%`;
-    clauses.push("(title LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\')");
-    params.push(term, term);
-  }
-
-  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  const rows = db
-    .prepare(`SELECT * FROM tasks ${where} ${ORDER_BY}`)
-    .all(...params) as unknown as TaskRow[];
-
-  return rows.map(mapRow);
+  if (error) throw new Error(error.message);
+  return data ? mapRow(data as TaskRow) : null;
 }
 
-export function getTask(id: number): Task | null {
-  const row = getDb()
-    .prepare("SELECT * FROM tasks WHERE id = ?")
-    .get(id) as unknown as TaskRow | undefined;
-  return row ? mapRow(row) : null;
+export async function getStats(
+  supabase: TaskSupabaseClient,
+  userId: string,
+): Promise<TaskStats> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("completed, priority")
+    .eq("user_id", userId);
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).reduce<TaskStats>(
+    (stats, task) => {
+      stats.total += 1;
+      if (task.completed) stats.completed += 1;
+      else {
+        stats.active += 1;
+        if (task.priority === "high") stats.highPriority += 1;
+      }
+      return stats;
+    },
+    { total: 0, completed: 0, active: 0, highPriority: 0 },
+  );
 }
 
-export function getStats(): TaskStats {
-  const row = getDb()
-    .prepare(
-      `SELECT
-         COUNT(*)                                                     AS total,
-         COALESCE(SUM(completed), 0)                                  AS completed,
-         COALESCE(SUM(1 - completed), 0)                              AS active,
-         COALESCE(SUM(CASE WHEN priority = 'high' AND completed = 0
-                           THEN 1 ELSE 0 END), 0)                     AS highPriority
-       FROM tasks`,
-    )
-    .get() as unknown as
-    | { total: number; completed: number; active: number; highPriority: number }
-    | undefined;
+export async function createTask(
+  supabase: TaskSupabaseClient,
+  userId: string,
+  input: CreateTaskInput,
+): Promise<Task> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .insert({
+      user_id: userId,
+      title: input.title.trim(),
+      description: input.description?.trim() ?? "",
+      priority: input.priority ?? "medium",
+      due_date: input.dueDate?.trim() || null,
+    })
+    .select("id, user_id, title, description, priority, completed, due_date, created_at, updated_at")
+    .single();
 
-  return {
-    total: Number(row?.total ?? 0),
-    completed: Number(row?.completed ?? 0),
-    active: Number(row?.active ?? 0),
-    highPriority: Number(row?.highPriority ?? 0),
-  };
+  if (error || !data) throw new Error(error?.message ?? "Gagal membuat tugas.");
+  return mapRow(data as TaskRow);
 }
 
-export function createTask(input: CreateTaskInput): Task {
-  const result = getDb()
-    .prepare(
-      `INSERT INTO tasks (title, description, priority, due_date)
-       VALUES (?, ?, ?, ?)`,
-    )
-    .run(
-      input.title.trim(),
-      input.description?.trim() ?? "",
-      input.priority ?? "medium",
-      input.dueDate?.trim() || null,
-    );
+export async function updateTask(
+  supabase: TaskSupabaseClient,
+  userId: string,
+  id: string,
+  patch: UpdateTaskInput,
+): Promise<Task | null> {
+  const updates: Record<string, string | boolean | null> = {};
+  if (patch.title !== undefined) updates.title = patch.title.trim();
+  if (patch.description !== undefined) updates.description = patch.description.trim();
+  if (patch.priority !== undefined) updates.priority = patch.priority;
+  if (patch.dueDate !== undefined) updates.due_date = patch.dueDate?.trim() || null;
+  if (patch.completed !== undefined) updates.completed = patch.completed;
 
-  const created = getTask(Number(result.lastInsertRowid));
-  if (!created) throw new Error("Gagal membuat tugas.");
-  return created;
+  if (Object.keys(updates).length === 0) return getTask(supabase, userId, id);
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .update(updates)
+    .eq("user_id", userId)
+    .eq("id", id)
+    .select("id, user_id, title, description, priority, completed, due_date, created_at, updated_at")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data ? mapRow(data as TaskRow) : null;
 }
 
-export function updateTask(id: number, patch: UpdateTaskInput): Task | null {
-  if (!getTask(id)) return null;
+export async function deleteTask(
+  supabase: TaskSupabaseClient,
+  userId: string,
+  id: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("user_id", userId)
+    .eq("id", id)
+    .select("id");
 
-  const sets: string[] = [];
-  const params: Array<string | number | null> = [];
-
-  if (patch.title !== undefined) {
-    sets.push("title = ?");
-    params.push(patch.title.trim());
-  }
-  if (patch.description !== undefined) {
-    sets.push("description = ?");
-    params.push(patch.description.trim());
-  }
-  if (patch.priority !== undefined) {
-    sets.push("priority = ?");
-    params.push(patch.priority);
-  }
-  if (patch.dueDate !== undefined) {
-    sets.push("due_date = ?");
-    params.push(patch.dueDate?.trim() || null);
-  }
-  if (patch.completed !== undefined) {
-    sets.push("completed = ?");
-    params.push(patch.completed ? 1 : 0);
-  }
-
-  if (sets.length === 0) return getTask(id);
-
-  sets.push("updated_at = datetime('now')");
-  params.push(id);
-
-  getDb()
-    .prepare(`UPDATE tasks SET ${sets.join(", ")} WHERE id = ?`)
-    .run(...params);
-
-  return getTask(id);
+  if (error) throw new Error(error.message);
+  return (data?.length ?? 0) > 0;
 }
 
-export function deleteTask(id: number): boolean {
-  const result = getDb().prepare("DELETE FROM tasks WHERE id = ?").run(id);
-  return Number(result.changes) > 0;
-}
+export async function deleteCompletedTasks(
+  supabase: TaskSupabaseClient,
+  userId: string,
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("user_id", userId)
+    .eq("completed", true)
+    .select("id");
 
-export function deleteCompletedTasks(): number {
-  const result = getDb().prepare("DELETE FROM tasks WHERE completed = 1").run();
-  return Number(result.changes);
+  if (error) throw new Error(error.message);
+  return data?.length ?? 0;
 }

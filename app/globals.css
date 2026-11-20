@@ -7,22 +7,22 @@
     ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 
-  --color-brand-50: #f4f1ff;
-  --color-brand-100: #eae4ff;
-  --color-brand-200: #d6ccff;
-  --color-brand-300: #b6a3ff;
-  --color-brand-400: #9370ff;
-  --color-brand-500: #7445ff;
-  --color-brand-600: #6428f5;
-  --color-brand-700: #541bd6;
-  --color-brand-800: #4518ab;
-  --color-brand-900: #3a1787;
-  --color-brand-950: #230b58;
+  --color-brand-50: #f0fdf4;
+  --color-brand-100: #dcfce7;
+  --color-brand-200: #bbf7d0;
+  --color-brand-300: #86efac;
+  --color-brand-400: #4ade80;
+  --color-brand-500: #22c55e;
+  --color-brand-600: #16a34a;
+  --color-brand-700: #15803d;
+  --color-brand-800: #166534;
+  --color-brand-900: #14532d;
+  --color-brand-950: #052e16;
 
   --shadow-soft:
-    0 1px 2px rgb(23 15 64 / 0.05), 0 18px 40px -24px rgb(23 15 64 / 0.35);
+    0 1px 2px rgb(5 20 10 / 0.05), 0 18px 40px -24px rgb(5 20 10 / 0.22);
   --shadow-lift:
-    0 2px 4px rgb(23 15 64 / 0.06), 0 24px 48px -20px rgb(23 15 64 / 0.3);
+    0 2px 4px rgb(5 20 10 / 0.06), 0 24px 48px -20px rgb(5 20 10 / 0.24);
 
   --animate-rise: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-fade: fade 0.3s ease-out both;
@@ -56,7 +56,7 @@
 
   body {
     @apply min-h-dvh text-slate-900 antialiased dark:text-slate-100;
-    background-color: #f6f5fb;
+    background-color: #f5faf6;
     background-image:
       radial-gradient(
         68% 55% at 12% -5%,
@@ -65,7 +65,7 @@
       ),
       radial-gradient(
         52% 42% at 92% 0%,
-        rgb(56 189 248 / 0.16),
+        rgb(34 197 94 / 0.12),
         transparent 72%
       );
     background-attachment: fixed;
@@ -73,7 +73,7 @@
   }
 
   .dark body {
-    background-color: #08080f;
+    background-color: #050807;
     background-image:
       radial-gradient(
         65% 50% at 10% -10%,
@@ -82,7 +82,7 @@
       ),
       radial-gradient(
         45% 38% at 95% 0%,
-        rgb(14 165 233 / 0.12),
+        rgb(34 197 94 / 0.09),
         transparent 72%
       );
   }

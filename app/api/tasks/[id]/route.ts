@@ -1,15 +1,22 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
-import { deleteTask, getTask, updateTask } from "@/lib/tasks";
+import {
+  deleteTask,
+  getTask,
+  getTaskContext,
+  TaskAuthRequiredError,
+  updateTask,
+} from "@/lib/tasks";
 import { fieldErrorsFrom, taskPatchSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-function parseId(raw: string): number | null {
-  const id = Number(raw);
-  return Number.isInteger(id) && id > 0 ? id : null;
+function parseId(raw: string): string | null {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw)
+    ? raw
+    : null;
 }
 
 function notFound() {
@@ -25,8 +32,17 @@ export async function GET(_request: Request, { params }: RouteContext) {
     return NextResponse.json({ error: "ID tidak valid." }, { status: 400 });
   }
 
-  const task = getTask(id);
-  return task ? NextResponse.json({ data: task }) : notFound();
+  try {
+    const { supabase, user } = await getTaskContext();
+    const task = await getTask(supabase, user.id, id);
+    return task ? NextResponse.json({ data: task }) : notFound();
+  } catch (error) {
+    if (error instanceof TaskAuthRequiredError) {
+      return NextResponse.json({ error: "Silakan sign in untuk mengakses tugas." }, { status: 401 });
+    }
+    console.error("[GET /api/tasks/:id]", error);
+    return NextResponse.json({ error: "Tugas gagal dimuat." }, { status: 500 });
+  }
 }
 
 /** PATCH /api/tasks/:id — ubah sebagian field, termasuk `completed`. */
@@ -59,11 +75,20 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     );
   }
 
-  const task = updateTask(id, parsed.data);
-  if (!task) return notFound();
+  try {
+    const { supabase, user } = await getTaskContext();
+    const task = await updateTask(supabase, user.id, id, parsed.data);
+    if (!task) return notFound();
 
-  revalidatePath("/");
-  return NextResponse.json({ data: task });
+    revalidatePath("/");
+    return NextResponse.json({ data: task });
+  } catch (error) {
+    if (error instanceof TaskAuthRequiredError) {
+      return NextResponse.json({ error: "Silakan sign in untuk mengubah tugas." }, { status: 401 });
+    }
+    console.error("[PATCH /api/tasks/:id]", error);
+    return NextResponse.json({ error: "Tugas gagal diubah." }, { status: 500 });
+  }
 }
 
 /** DELETE /api/tasks/:id */
@@ -75,9 +100,18 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     return NextResponse.json({ error: "ID tidak valid." }, { status: 400 });
   }
 
-  const deleted = deleteTask(id);
-  if (!deleted) return notFound();
+  try {
+    const { supabase, user } = await getTaskContext();
+    const deleted = await deleteTask(supabase, user.id, id);
+    if (!deleted) return notFound();
 
-  revalidatePath("/");
-  return new NextResponse(null, { status: 204 });
+    revalidatePath("/");
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    if (error instanceof TaskAuthRequiredError) {
+      return NextResponse.json({ error: "Silakan sign in untuk menghapus tugas." }, { status: 401 });
+    }
+    console.error("[DELETE /api/tasks/:id]", error);
+    return NextResponse.json({ error: "Tugas gagal dihapus." }, { status: 500 });
+  }
 }

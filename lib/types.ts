@@ -3,7 +3,7 @@ export const PRIORITIES = ["low", "medium", "high"] as const;
 export type Priority = (typeof PRIORITIES)[number];
 
 export type Task = {
-  id: number;
+  id: string;
   title: string;
   description: string;
   priority: Priority;

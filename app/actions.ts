@@ -6,6 +6,8 @@ import {
   createTask,
   deleteCompletedTasks,
   deleteTask,
+  getTaskContext,
+  TaskAuthRequiredError,
   updateTask,
 } from "@/lib/tasks";
 import {
@@ -14,8 +16,8 @@ import {
   taskInputSchema,
 } from "@/lib/validation";
 
-function isValidId(id: number): boolean {
-  return Number.isInteger(id) && id > 0;
+function isValidId(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 }
 
 export async function createTaskAction(
@@ -33,7 +35,8 @@ export async function createTaskAction(
   }
 
   try {
-    const task = createTask(parsed.data);
+    const { supabase, user } = await getTaskContext();
+    const task = await createTask(supabase, user.id, parsed.data);
     revalidatePath("/");
     return {
       status: "success",
@@ -41,6 +44,9 @@ export async function createTaskAction(
       fieldErrors: {},
     };
   } catch (error) {
+    if (error instanceof TaskAuthRequiredError) {
+      return { status: "error", message: "Silakan sign in untuk mengelola tugas.", fieldErrors: {} };
+    }
     console.error("[createTaskAction]", error);
     return {
       status: "error",
@@ -51,7 +57,7 @@ export async function createTaskAction(
 }
 
 export async function toggleTaskAction(
-  id: number,
+  id: string,
   completed: boolean,
 ): Promise<ActionState> {
   if (!isValidId(id)) {
@@ -59,7 +65,8 @@ export async function toggleTaskAction(
   }
 
   try {
-    const task = updateTask(id, { completed });
+    const { supabase, user } = await getTaskContext();
+    const task = await updateTask(supabase, user.id, id, { completed });
     if (!task) {
       return { status: "error", message: "Tugas tidak ditemukan.", fieldErrors: {} };
     }
@@ -72,6 +79,9 @@ export async function toggleTaskAction(
       fieldErrors: {},
     };
   } catch (error) {
+    if (error instanceof TaskAuthRequiredError) {
+      return { status: "error", message: "Silakan sign in untuk mengelola tugas.", fieldErrors: {} };
+    }
     console.error("[toggleTaskAction]", error);
     return {
       status: "error",
@@ -81,19 +91,23 @@ export async function toggleTaskAction(
   }
 }
 
-export async function deleteTaskAction(id: number): Promise<ActionState> {
+export async function deleteTaskAction(id: string): Promise<ActionState> {
   if (!isValidId(id)) {
     return { status: "error", message: "Tugas tidak ditemukan.", fieldErrors: {} };
   }
 
   try {
-    const deleted = deleteTask(id);
+    const { supabase, user } = await getTaskContext();
+    const deleted = await deleteTask(supabase, user.id, id);
     if (!deleted) {
       return { status: "error", message: "Tugas tidak ditemukan.", fieldErrors: {} };
     }
     revalidatePath("/");
     return { status: "success", message: "Tugas dihapus.", fieldErrors: {} };
   } catch (error) {
+    if (error instanceof TaskAuthRequiredError) {
+      return { status: "error", message: "Silakan sign in untuk mengelola tugas.", fieldErrors: {} };
+    }
     console.error("[deleteTaskAction]", error);
     return { status: "error", message: "Tugas gagal dihapus.", fieldErrors: {} };
   }
@@ -101,7 +115,8 @@ export async function deleteTaskAction(id: number): Promise<ActionState> {
 
 export async function clearCompletedAction(): Promise<ActionState> {
   try {
-    const count = deleteCompletedTasks();
+    const { supabase, user } = await getTaskContext();
+    const count = await deleteCompletedTasks(supabase, user.id);
     revalidatePath("/");
     return {
       status: "success",
@@ -112,6 +127,9 @@ export async function clearCompletedAction(): Promise<ActionState> {
       fieldErrors: {},
     };
   } catch (error) {
+    if (error instanceof TaskAuthRequiredError) {
+      return { status: "error", message: "Silakan sign in untuk mengelola tugas.", fieldErrors: {} };
+    }
     console.error("[clearCompletedAction]", error);
     return {
       status: "error",
